@@ -9,8 +9,8 @@ interface ChatSidebarProps {
 
 export function ChatSidebar({ roomCode, users, onLeave }: ChatSidebarProps) {
   return (
-    <div className="w-56 h-full bg-card border-r border-border flex flex-col shrink-0 hidden md:flex">
-      <div className="p-4 border-b border-border">
+    <div className="w-56 h-full bg-card flex flex-col shrink-0 hidden md:flex">
+      <div className="p-4">
         <span className="text-xs font-medium text-muted-foreground">Room</span>
         <p className="text-sm font-medium text-foreground truncate mt-0.5">{roomCode}</p>
       </div>
@@ -23,14 +23,14 @@ export function ChatSidebar({ roomCode, users, onLeave }: ChatSidebarProps) {
         <div className="space-y-1.5">
           {users.map((u) => (
             <div key={u.username} className="flex items-center gap-2 px-2 py-1 rounded">
-              <div className="w-1.5 h-1.5 rounded-full bg-foreground" />
+              <div className="w-1.5 h-1.5 rounded-full bg-online" />
               <span className="text-sm text-foreground truncate">{u.username}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4">
         <button
           onClick={onLeave}
           className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 rounded-md hover:bg-muted"

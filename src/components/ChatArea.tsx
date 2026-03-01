@@ -59,7 +59,7 @@ export function ChatArea({
   return (
     <div className="flex-1 flex flex-col h-screen min-w-0">
       {/* Header */}
-      <header className="h-12 border-b border-border flex items-center justify-between px-4 shrink-0 bg-card">
+      <header className="h-12 flex items-center justify-between px-4 shrink-0 bg-card">
         <span className="text-sm font-medium text-foreground">{roomCode}</span>
         <div className="flex items-center gap-1">
           <button
@@ -99,8 +99,8 @@ export function ChatArea({
                 <div
                   className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                     isOwn
-                      ? 'bg-primary text-primary-foreground rounded-br-sm'
-                      : 'bg-muted text-foreground rounded-bl-sm'
+                      ? 'bg-message-own text-message-own-foreground rounded-br-sm'
+                      : 'bg-message-other text-message-other-foreground rounded-bl-sm'
                   }`}
                 >
                   {msg.text}
@@ -120,22 +120,27 @@ export function ChatArea({
 
       {/* Typing indicator */}
       {typingUsers.length > 0 && (
-        <div className="px-4 pb-1">
+        <div className="px-4 pb-1 flex items-center gap-2">
+          <div className="bg-message-other rounded-2xl rounded-bl-sm px-3 py-2 flex items-center gap-1">
+            <span className="typing-dot w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block" />
+            <span className="typing-dot w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block" />
+            <span className="typing-dot w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block" />
+          </div>
           <span className="text-[11px] text-muted-foreground">
-            {typingUsers.join(', ')} typing…
+            {typingUsers.join(', ')}
           </span>
         </div>
       )}
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-border shrink-0">
+      <form onSubmit={handleSubmit} className="p-3 shrink-0">
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={handleInputChange}
             placeholder="Message"
-            className="flex-1 bg-input rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none border border-border focus:border-foreground transition-colors"
+            className="flex-1 bg-input rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring transition-colors"
             maxLength={2000}
           />
           <button

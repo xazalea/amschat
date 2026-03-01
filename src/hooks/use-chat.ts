@@ -6,14 +6,19 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 const generateId = () => Math.random().toString(36).substring(2, 12);
 
 export function useChat() {
-  const [state, setState] = useState<ChatState>({
-    username: '',
-    roomCode: '',
-    messages: [],
-    users: [],
-    isJoined: false,
-    notificationsEnabled: false,
-    typingUsers: [],
+  const [state, setState] = useState<ChatState>(() => {
+    const savedNotif = typeof window !== 'undefined'
+      ? localStorage.getItem('chat_notif_pref') === 'true'
+      : false;
+    return {
+      username: '',
+      roomCode: '',
+      messages: [],
+      users: [],
+      isJoined: false,
+      notificationsEnabled: savedNotif,
+      typingUsers: [],
+    };
   });
 
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -228,10 +233,12 @@ export function useChat() {
       if ('Notification' in window) {
         const perm = await Notification.requestPermission();
         if (perm === 'granted') {
+          localStorage.setItem('chat_notif_pref', 'true');
           setState(prev => ({ ...prev, notificationsEnabled: true }));
         }
       }
     } else {
+      localStorage.setItem('chat_notif_pref', 'false');
       setState(prev => ({ ...prev, notificationsEnabled: false }));
     }
   }, [state.notificationsEnabled]);
