@@ -19,36 +19,54 @@ interface GifData {
   };
 }
 
+// Using Tenor API (free, no key required for basic usage)
+const TENOR_API_KEY = 'AIzaSyCPy4K10W_7qSmn9xWZvI9ePGl8lNlJ_3I'; // Public Tenor API key
+const CLIENT_KEY = 'qwerch-chat';
+
 export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
   const [gifs, setGifs] = useState<GifData[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [offset, setOffset] = useState(0);
+  const [nextPos, setNextPos] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadingRef = useRef(false);
 
-  const fetchGifs = useCallback(async (searchTerm: string, offsetVal: number, append: boolean = false) => {
+  const fetchGifs = useCallback(async (searchTerm: string, pos: string | null, append: boolean = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
     setLoading(true);
     
     try {
-      const limit = 25;
-      const endpoint = searchTerm 
-        ? `/api/gifs/search?q=${encodeURIComponent(searchTerm)}&offset=${offsetVal}&limit=${limit}`
-        : `/api/gifs/trending?offset=${offsetVal}&limit=${limit}`;
+      const limit = 20;
+      let url: string;
       
-      const response = await fetch(endpoint);
+      if (searchTerm) {
+        url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${TENOR_API_KEY}&client_key=${CLIENT_KEY}&limit=${limit}${pos ? `&pos=${pos}` : ''}&media_filter=gif,tinygif,mediumgif`;
+      } else {
+        url = `https://tenor.googleapis.com/v2/featured?key=${TENOR_API_KEY}&client_key=${CLIENT_KEY}&limit=${limit}${pos ? `&pos=${pos}` : ''}&media_filter=gif,tinygif,mediumgif`;
+      }
+      
+      const response = await fetch(url);
       const data = await response.json();
       
-      if (data.data && Array.isArray(data.data)) {
+      if (data.results && Array.isArray(data.results)) {
+        const formattedGifs: GifData[] = data.results.map((gif: any) => ({
+          id: gif.id,
+          title: gif.title || 'GIF',
+          images: {
+            original: { url: gif.media_formats?.mediumgif?.url || gif.media_formats?.gif?.url || gif.url },
+            preview: { url: gif.media_formats?.tinygif?.url || gif.media_formats?.mediumgif?.url || gif.url },
+          },
+        }));
+        
         if (append) {
-          setGifs(prev => [...prev, ...data.data]);
+          setGifs(prev => [...prev, ...formattedGifs]);
         } else {
-          setGifs(data.data);
+          setGifs(formattedGifs);
         }
-        setHasMore(data.data.length >= limit);
+        setNextPos(data.next || null);
+        setHasMore(!!data.next);
       } else {
         setHasMore(false);
         if (!append) {
@@ -66,9 +84,10 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
 
   useEffect(() => {
     if (open) {
-      setOffset(0);
+      setNextPos(null);
       setGifs([]);
-      fetchGifs('', 0, false);
+      setSearch('');
+      fetchGifs('', null, false);
     }
   }, [open, fetchGifs]);
 
@@ -77,10 +96,10 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
       clearTimeout(searchTimeout.current);
     }
     searchTimeout.current = setTimeout(() => {
-      setOffset(0);
+      setNextPos(null);
       setGifs([]);
       setHasMore(true);
-      fetchGifs(search, 0, false);
+      fetchGifs(search, null, false);
     }, 400);
 
     return () => {
@@ -99,10 +118,8 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
     const target = e.target as HTMLDivElement;
     const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
     
-    if (scrollBottom < 150 && hasMore && !loadingRef.current) {
-      const newOffset = offset + 25;
-      setOffset(newOffset);
-      fetchGifs(search, newOffset, true);
+    if (scrollBottom < 150 && hasMore && !loadingRef.current && nextPos) {
+      fetchGifs(search, nextPos, true);
     }
   };
 

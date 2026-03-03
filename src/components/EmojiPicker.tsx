@@ -23,10 +23,11 @@ const EMOJI_CATEGORIES = {
 };
 
 // Emoji Kitchen combinations - using correct Google API format
-// Format: https://www.gstatic.com/android/keyboard/emojikitchen/{date}/emoji_u{code1}_emoji_u{code2}.png
+// The format is: https://www.gstatic.com/android/keyboard/emojikitchen/{date}/emoji_u{code1}_emoji_u{code2}.png
+// But we need to try both orders since combinations can be in either direction
 const EMOJI_KITCHEN_BASE = 'https://www.gstatic.com/android/keyboard/emojikitchen';
 
-// Convert emoji to Unicode codepoint string (lowercase, no leading zeros)
+// Convert emoji to Unicode codepoint string (lowercase)
 function emojiToCodepoint(emoji: string): string {
   const codepoints: string[] = [];
   for (const char of emoji) {
@@ -38,89 +39,134 @@ function emojiToCodepoint(emoji: string): string {
   return codepoints.join('_');
 }
 
-// Known emoji kitchen data - maps emoji pairs to their date and combination
-// This is a subset of popular combinations that are known to work
-const EMOJI_KITCHEN_DATA: Record<string, { date: string; combinations: string[] }> = {
-  // 😀 base
-  '1f600': { date: '20201001', combinations: ['1f602', '1f60d', '1f60e', '1f97a', '1f970', '1f389', '2764', '1f4af', '2728', '1f525'] },
-  // 😂 base  
-  '1f602': { date: '20201001', combinations: ['1f602', '1f60d', '1f614', '1f97a', '1f44d', '2764', '1f4af', '1f525'] },
-  // 😍 base
-  '1f60d': { date: '20201001', combinations: ['1f602', '1f60d', '1f618', '1f970', '2764', '1f495', '1f4af', '1f4a5'] },
-  // 🥰 base
-  '1f970': { date: '20201001', combinations: ['1f60d', '2764', '1f495', '1f497', '1f4af'] },
-  // 🥺 base
-  '1f97a': { date: '20201001', combinations: ['1f602', '1f614', '1f62d', '2764', '1f495'] },
-  // 😭 base
-  '1f62d': { date: '20201001', combinations: ['1f602', '1f97a', '1f614', '2764', '1f494'] },
-  // 🤔 base
-  '1f914': { date: '20201001', combinations: ['1f4a1', '2753', '1f440', '1f9d0'] },
-  // 👻 base
-  '1f47b': { date: '20201001', combinations: ['1f602', '1f97a', '2764', '1f525', '1f4a1'] },
-  // 💀 base
-  '1f480': { date: '20201001', combinations: ['1f602', '1f97a', '2764', '1f525'] },
-  // ❤️ base
-  '2764': { date: '20201001', combinations: ['1f60d', '1f970', '1f97a', '1f495', '1f4af', '1f525', '1f4a1', '1f389', '2b50', '2728'] },
-  // 🔥 base
-  '1f525': { date: '20201001', combinations: ['1f60d', '1f44d', '2764', '1f4af', '1f4a1', '1f31f'] },
-  // ✨ base
-  '2728': { date: '20201001', combinations: ['2764', '1f4af', '1f31f', '1f4a1', '1f389'] },
-  // 🎉 base
-  '1f389': { date: '20201001', combinations: ['1f60d', '2764', '1f4af', '2728', '1f31f'] },
-  // 💯 base
-  '1f4af': { date: '20201001', combinations: ['1f60d', '1f44d', '2764', '1f525', '2728'] },
-  // 👍 base
-  '1f44d': { date: '20201001', combinations: ['1f60d', '1f44d', '2764', '1f4af', '1f525'] },
-  // 🐱 base
-  '1f431': { date: '20201001', combinations: ['2764', '1f602', '1f97a', '1f4a5'] },
-  // 🐶 base
-  '1f436': { date: '20201001', combinations: ['2764', '1f602', '1f97a'] },
-  // 🦄 base
-  '1f984': { date: '20201001', combinations: ['2764', '2728', '1f31f'] },
-  // 🌈 base
-  '1f308': { date: '20201001', combinations: ['2764', '1f60d', '2728', '1f31f'] },
-  // ⭐ base
-  '2b50': { date: '20201001', combinations: ['2764', '1f60d', '2728', '1f31f'] },
-  // 🌟 base
-  '1f31f': { date: '20201001', combinations: ['2764', '1f60d', '2728', '1f4af'] },
+// Known working emoji kitchen combinations with their dates
+// Format: "cp1_cp2" -> date
+const KNOWN_COMBINATIONS: Record<string, string> = {
+  // 😀 combinations
+  '1f600_1f602': '20210218',
+  '1f600_1f60d': '20210218',
+  '1f600_2764': '20210218',
+  '1f600_1f4af': '20210218',
+  '1f600_2728': '20210218',
+  '1f600_1f525': '20210218',
+  
+  // 😂 combinations
+  '1f602_1f602': '20210218',
+  '1f602_2764': '20210218',
+  '1f602_1f62d': '20210218',
+  '1f602_1f97a': '20210218',
+  
+  // 😍 combinations
+  '1f60d_2764': '20210218',
+  '1f60d_1f602': '20210218',
+  '1f60d_1f970': '20210218',
+  
+  // 🥰 combinations
+  '1f970_2764': '20210218',
+  '1f970_1f60d': '20210218',
+  
+  // 🥺 combinations
+  '1f97a_2764': '20210218',
+  '1f97a_1f602': '20210218',
+  '1f97a_1f62d': '20210218',
+  
+  // 😭 combinations
+  '1f62d_1f602': '20210218',
+  '1f62d_2764': '20210218',
+  
+  // ❤️ combinations (most popular)
+  '2764_1f60d': '20210218',
+  '2764_1f525': '20210218',
+  '2764_2728': '20210218',
+  '2764_1f4af': '20210218',
+  '2764_1f389': '20210218',
+  '2764_1f602': '20210218',
+  '2764_1f97a': '20210218',
+  '2764_1f970': '20210218',
+  
+  // 🔥 combinations
+  '1f525_2764': '20210218',
+  '1f525_1f44d': '20210218',
+  '1f525_1f4af': '20210218',
+  '1f525_1f60d': '20210218',
+  
+  // ✨ combinations
+  '2728_2764': '20210218',
+  '2728_1f4af': '20210218',
+  '2728_1f31f': '20210218',
+  
+  // 💯 combinations
+  '1f4af_2764': '20210218',
+  '1f4af_1f525': '20210218',
+  
+  // 👍 combinations
+  '1f44d_1f525': '20210218',
+  '1f44d_2764': '20210218',
+  
+  // 👻 combinations
+  '1f47b_2764': '20210218',
+  '1f47b_1f602': '20210218',
+  
+  // 💀 combinations
+  '1f480_1f602': '20210218',
+  '1f480_2764': '20210218',
+  
+  // 🎉 combinations
+  '1f389_2764': '20210218',
+  '1f389_1f60d': '20210218',
+  
+  // 🌈 combinations
+  '1f308_2764': '20210218',
+  '1f308_1f60d': '20210218',
+  
+  // ⭐ combinations
+  '2b50_2764': '20210218',
+  
+  // 🌟 combinations
+  '1f31f_2764': '20210218',
+  '1f31f_2728': '20210218',
 };
 
-// Check if a combination exists and get its URL
+// Get Emoji Kitchen URL for a combination
 function getEmojiKitchenUrl(emoji1: string, emoji2: string): string | null {
   const cp1 = emojiToCodepoint(emoji1);
   const cp2 = emojiToCodepoint(emoji2);
   
-  // Check if this combination exists in our data
-  const data1 = EMOJI_KITCHEN_DATA[cp1];
-  const data2 = EMOJI_KITCHEN_DATA[cp2];
+  // Try both orders
+  const key1 = `${cp1}_${cp2}`;
+  const key2 = `${cp2}_${cp1}`;
   
-  let date: string | null = null;
+  let date: string;
   let baseCp: string;
   let comboCp: string;
   
-  if (data1 && data1.combinations.includes(cp2)) {
-    date = data1.date;
+  if (KNOWN_COMBINATIONS[key1]) {
+    date = KNOWN_COMBINATIONS[key1];
     baseCp = cp1;
     comboCp = cp2;
-  } else if (data2 && data2.combinations.includes(cp1)) {
-    date = data2.date;
+  } else if (KNOWN_COMBINATIONS[key2]) {
+    date = KNOWN_COMBINATIONS[key2];
     baseCp = cp2;
     comboCp = cp1;
   } else {
-    // Try with default date for unknown combinations
-    date = '20201001';
-    baseCp = cp1;
-    comboCp = cp2;
+    // Not a known combination - return null to show "No combo"
+    return null;
   }
   
-  // Build URL - format: {base}/{date}/emoji_u{cp1}_emoji_u{cp2}.png
+  // Build URL
   return `${EMOJI_KITCHEN_BASE}/${date}/emoji_u${baseCp}_emoji_u${comboCp}.png`;
 }
 
 // Check if emoji has known combinations
 function hasCombinations(emoji: string): boolean {
   const cp = emojiToCodepoint(emoji);
-  return cp in EMOJI_KITCHEN_DATA;
+  // Check if this emoji appears in any known combination
+  for (const key of Object.keys(KNOWN_COMBINATIONS)) {
+    if (key.startsWith(cp + '_') || key.endsWith('_' + cp)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
