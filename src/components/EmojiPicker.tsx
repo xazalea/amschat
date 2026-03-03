@@ -1,9 +1,8 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { Search, Sparkles, X, Sticker, Smile } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface EmojiPickerProps {
   open: boolean;
@@ -13,7 +12,7 @@ interface EmojiPickerProps {
 
 // Standard emoji categories
 const EMOJI_CATEGORIES = {
-  'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖'],
+  'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'],
   'Gestures': ['👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '🩸', '🦠', '🧫'],
   'Hearts': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '✨', '⭐', '🌟', '💫', '✴️', '‼️', '⁉️', '❓', '❔', '❕', '❗', '™️', '©️', '®️'],
   'Animals': ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🐇', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔'],
@@ -23,66 +22,11 @@ const EMOJI_CATEGORIES = {
   'Symbols': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '🉑', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '🛗', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '⚧️', '🚻', '🚮', '🎦', '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽', '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁', '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗', '✖️', '🟰', '♾️', '💲', '💱', '〰️', '➰', '➿', '🔚', '🔙', '🔛', '🔝', '🔜', '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '🔲', '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔', '🔕', '📣', '📢', '👁️‍🗨️', '💬', '💭', '🗯️', '♠️', '♣️', '♥️', '♦️', '🃏', '🎴', '🀄'],
 };
 
-// Sticker packs (Twemoji-based)
-const STICKER_PACKS = [
-  {
-    name: 'Faces',
-    stickers: [
-      { emoji: '😀', name: 'Grinning' },
-      { emoji: '😂', name: 'Joy' },
-      { emoji: '🥰', name: 'Love' },
-      { emoji: '😎', name: 'Cool' },
-      { emoji: '🤔', name: 'Thinking' },
-      { emoji: '😭', name: 'Crying' },
-      { emoji: '🥺', name: 'Pleading' },
-      { emoji: '😤', name: 'Angry' },
-      { emoji: '🤡', name: 'Clown' },
-      { emoji: '💀', name: 'Skull' },
-      { emoji: '👻', name: 'Ghost' },
-      { emoji: '👽', name: 'Alien' },
-    ],
-  },
-  {
-    name: 'Hearts',
-    stickers: [
-      { emoji: '❤️', name: 'Red Heart' },
-      { emoji: '🧡', name: 'Orange Heart' },
-      { emoji: '💛', name: 'Yellow Heart' },
-      { emoji: '💚', name: 'Green Heart' },
-      { emoji: '💙', name: 'Blue Heart' },
-      { emoji: '💜', name: 'Purple Heart' },
-      { emoji: '🖤', name: 'Black Heart' },
-      { emoji: '🤍', name: 'White Heart' },
-      { emoji: '💔', name: 'Broken Heart' },
-      { emoji: '💕', name: 'Two Hearts' },
-      { emoji: '💖', name: 'Sparkle Heart' },
-      { emoji: '💗', name: 'Growing Heart' },
-    ],
-  },
-  {
-    name: 'Animals',
-    stickers: [
-      { emoji: '🐱', name: 'Cat' },
-      { emoji: '🐶', name: 'Dog' },
-      { emoji: '🦊', name: 'Fox' },
-      { emoji: '🐻', name: 'Bear' },
-      { emoji: '🐼', name: 'Panda' },
-      { emoji: '🦄', name: 'Unicorn' },
-      { emoji: '🐸', name: 'Frog' },
-      { emoji: '🦋', name: 'Butterfly' },
-      { emoji: '🦈', name: 'Shark' },
-      { emoji: '🐙', name: 'Octopus' },
-      { emoji: '🦀', name: 'Crab' },
-      { emoji: '🐳', name: 'Whale' },
-    ],
-  },
-];
-
-// Emoji Kitchen API helper
-// Based on https://github.com/xsalazar/emoji-kitchen
+// Emoji Kitchen combinations - using correct Google API format
+// Format: https://www.gstatic.com/android/keyboard/emojikitchen/{date}/emoji_u{code1}_emoji_u{code2}.png
 const EMOJI_KITCHEN_BASE = 'https://www.gstatic.com/android/keyboard/emojikitchen';
 
-// Convert emoji to Unicode codepoint string
+// Convert emoji to Unicode codepoint string (lowercase, no leading zeros)
 function emojiToCodepoint(emoji: string): string {
   const codepoints: string[] = [];
   for (const char of emoji) {
@@ -91,81 +35,99 @@ function emojiToCodepoint(emoji: string): string {
       codepoints.push(cp.toString(16).toLowerCase());
     }
   }
-  return codepoints.join('-');
+  return codepoints.join('_');
 }
 
-// Known working date prefixes for emoji kitchen
-const KNOWN_DATES: Record<string, string> = {
-  // Smileys
-  '1f600': '20201001', // 😀
-  '1f602': '20201001', // 😂
-  '1f60d': '20201001', // 😍
-  '1f60e': '20201001', // 😎
-  '1f60a': '20201001', // 😊
-  '1f970': '20201001', // 🥰
-  '1f97a': '20201001', // 🥺
-  '1f62d': '20201001', // 😭
-  '1f914': '20201001', // 🤔
-  '1f920': '20201001', // 🤠
-  '1f921': '20201001', // 🤡
-  '1f929': '20201001', // 🤩
-  '1f973': '20201001', // 🥳
-  '1f631': '20201001', // 😱
-  '1f634': '20201001', // 😴
-  // Hearts
-  '2764': '20201001', // ❤️
-  '1f499': '20201001', // 💙
-  '1f49a': '20201001', // 💚
-  '1f49b': '20201001', // 💛
-  '1f49c': '20201001', // 💜
-  '1f5a4': '20201001', // 🖤
-  '1f9e1': '20201001', // 🧡
-  '1f90d': '20201001', // 🤍
-  '1f90e': '20201001', // 🤎
-  '1f495': '20201001', // 💕
-  // Others
-  '1f47b': '20201001', // 👻
-  '1f480': '20201001', // 💀
-  '1f47d': '20201001', // 👽
-  '1f916': '20201001', // 🤖
-  '1f431': '20201001', // 🐱
-  '1f436': '20201001', // 🐶
-  '1f984': '20201001', // 🦄
-  '1f525': '20201001', // 🔥
-  '2728': '20201001', // ✨
-  '2b50': '20201001', // ⭐
-  '1f389': '20201001', // 🎉
-  '1f4a1': '20201001', // 💡
-  '1f4a4': '20201001', // 💤
-  '1f4af': '20201001', // 💯
-  '1f308': '20201001', // 🌈
-  '1f383': '20201001', // 🎃
+// Known emoji kitchen data - maps emoji pairs to their date and combination
+// This is a subset of popular combinations that are known to work
+const EMOJI_KITCHEN_DATA: Record<string, { date: string; combinations: string[] }> = {
+  // 😀 base
+  '1f600': { date: '20201001', combinations: ['1f602', '1f60d', '1f60e', '1f97a', '1f970', '1f389', '2764', '1f4af', '2728', '1f525'] },
+  // 😂 base  
+  '1f602': { date: '20201001', combinations: ['1f602', '1f60d', '1f614', '1f97a', '1f44d', '2764', '1f4af', '1f525'] },
+  // 😍 base
+  '1f60d': { date: '20201001', combinations: ['1f602', '1f60d', '1f618', '1f970', '2764', '1f495', '1f4af', '1f4a5'] },
+  // 🥰 base
+  '1f970': { date: '20201001', combinations: ['1f60d', '2764', '1f495', '1f497', '1f4af'] },
+  // 🥺 base
+  '1f97a': { date: '20201001', combinations: ['1f602', '1f614', '1f62d', '2764', '1f495'] },
+  // 😭 base
+  '1f62d': { date: '20201001', combinations: ['1f602', '1f97a', '1f614', '2764', '1f494'] },
+  // 🤔 base
+  '1f914': { date: '20201001', combinations: ['1f4a1', '2753', '1f440', '1f9d0'] },
+  // 👻 base
+  '1f47b': { date: '20201001', combinations: ['1f602', '1f97a', '2764', '1f525', '1f4a1'] },
+  // 💀 base
+  '1f480': { date: '20201001', combinations: ['1f602', '1f97a', '2764', '1f525'] },
+  // ❤️ base
+  '2764': { date: '20201001', combinations: ['1f60d', '1f970', '1f97a', '1f495', '1f4af', '1f525', '1f4a1', '1f389', '2b50', '2728'] },
+  // 🔥 base
+  '1f525': { date: '20201001', combinations: ['1f60d', '1f44d', '2764', '1f4af', '1f4a1', '1f31f'] },
+  // ✨ base
+  '2728': { date: '20201001', combinations: ['2764', '1f4af', '1f31f', '1f4a1', '1f389'] },
+  // 🎉 base
+  '1f389': { date: '20201001', combinations: ['1f60d', '2764', '1f4af', '2728', '1f31f'] },
+  // 💯 base
+  '1f4af': { date: '20201001', combinations: ['1f60d', '1f44d', '2764', '1f525', '2728'] },
+  // 👍 base
+  '1f44d': { date: '20201001', combinations: ['1f60d', '1f44d', '2764', '1f4af', '1f525'] },
+  // 🐱 base
+  '1f431': { date: '20201001', combinations: ['2764', '1f602', '1f97a', '1f4a5'] },
+  // 🐶 base
+  '1f436': { date: '20201001', combinations: ['2764', '1f602', '1f97a'] },
+  // 🦄 base
+  '1f984': { date: '20201001', combinations: ['2764', '2728', '1f31f'] },
+  // 🌈 base
+  '1f308': { date: '20201001', combinations: ['2764', '1f60d', '2728', '1f31f'] },
+  // ⭐ base
+  '2b50': { date: '20201001', combinations: ['2764', '1f60d', '2728', '1f31f'] },
+  // 🌟 base
+  '1f31f': { date: '20201001', combinations: ['2764', '1f60d', '2728', '1f4af'] },
 };
 
-// Get Emoji Kitchen URL for a combination
+// Check if a combination exists and get its URL
 function getEmojiKitchenUrl(emoji1: string, emoji2: string): string | null {
   const cp1 = emojiToCodepoint(emoji1);
   const cp2 = emojiToCodepoint(emoji2);
   
-  // Get the date for the first emoji (use as base)
-  const date = KNOWN_DATES[cp1] || KNOWN_DATES[cp2] || '20201001';
+  // Check if this combination exists in our data
+  const data1 = EMOJI_KITCHEN_DATA[cp1];
+  const data2 = EMOJI_KITCHEN_DATA[cp2];
   
-  // Build URL - format: {base}/{date}/emoji_u{cp1}/emoji_u{cp2}.png
-  return `${EMOJI_KITCHEN_BASE}/${date}/emoji_u${cp1}/emoji_u${cp2}.png`;
+  let date: string | null = null;
+  let baseCp: string;
+  let comboCp: string;
+  
+  if (data1 && data1.combinations.includes(cp2)) {
+    date = data1.date;
+    baseCp = cp1;
+    comboCp = cp2;
+  } else if (data2 && data2.combinations.includes(cp1)) {
+    date = data2.date;
+    baseCp = cp2;
+    comboCp = cp1;
+  } else {
+    // Try with default date for unknown combinations
+    date = '20201001';
+    baseCp = cp1;
+    comboCp = cp2;
+  }
+  
+  // Build URL - format: {base}/{date}/emoji_u{cp1}_emoji_u{cp2}.png
+  return `${EMOJI_KITCHEN_BASE}/${date}/emoji_u${baseCp}_emoji_u${comboCp}.png`;
 }
 
-// Popular emojis for combinations
-const COMBINATION_BASES = [
-  '😀', '😂', '😍', '🥰', '😎', '🥺', '😭', '🤔', '😱', '🥳', '🤩', '🤠',
-  '🤡', '👻', '💀', '👽', '🤖', '❤️', '💙', '💚', '💛', '💜', '🖤', '🔥',
-  '✨', '⭐', '🎉', '🐱', '🐶', '🦄', '🌈', '💯',
-];
+// Check if emoji has known combinations
+function hasCombinations(emoji: string): boolean {
+  const cp = emojiToCodepoint(emoji);
+  return cp in EMOJI_KITCHEN_DATA;
+}
 
 export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
   const [search, setSearch] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('emojis');
-  const [previewCombination, setPreviewCombination] = useState<{ url: string; emoji1: string; emoji2: string } | null>(null);
+  const [selectedEmojis, setSelectedEmojis] = useState<string[]>([]);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filter emojis by search
@@ -185,39 +147,73 @@ export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
     return filtered;
   }, [search]);
 
-  const handleSelect = useCallback((emoji: string) => {
+  // Handle emoji click
+  const handleEmojiClick = useCallback((emoji: string) => {
+    setSelectedEmojis(prev => {
+      const newSelection = [...prev];
+      
+      if (newSelection.length === 0) {
+        // First emoji selected
+        newSelection.push(emoji);
+      } else if (newSelection.length === 1) {
+        if (newSelection[0] === emoji) {
+          // Deselect if same emoji clicked
+          return [];
+        }
+        // Second emoji selected - try to combine
+        newSelection.push(emoji);
+        const url = getEmojiKitchenUrl(newSelection[0], newSelection[1]);
+        if (url) {
+          setPreviewUrl(url);
+          setPreviewError(false);
+        }
+      } else {
+        // Already have 2 selected, start fresh with this one
+        setPreviewUrl(null);
+        setPreviewError(false);
+        return [emoji];
+      }
+      
+      return newSelection;
+    });
+  }, []);
+
+  // Send single emoji
+  const handleSendSingle = useCallback((emoji: string) => {
     onSelect(emoji);
     onClose();
-    setSelectedEmoji(null);
+    setSelectedEmojis([]);
     setSearch('');
-    setPreviewCombination(null);
+    setPreviewUrl(null);
+    setPreviewError(false);
   }, [onSelect, onClose]);
 
-  const handleCreateCombination = useCallback((emoji1: string, emoji2: string) => {
-    const url = getEmojiKitchenUrl(emoji1, emoji2);
-    if (url) {
-      // Send as a custom emoji combination image
-      onSelect(`[EMOJI_KITCHEN:${emoji1}:${emoji2}:${url}]`);
+  // Send combination
+  const handleSendCombination = useCallback(() => {
+    if (selectedEmojis.length === 2 && previewUrl && !previewError) {
+      onSelect(`[EMOJI_KITCHEN:${selectedEmojis[0]}:${selectedEmojis[1]}:${previewUrl}]`);
       onClose();
-      setSelectedEmoji(null);
-      setPreviewCombination(null);
+      setSelectedEmojis([]);
+      setSearch('');
+      setPreviewUrl(null);
+      setPreviewError(false);
     }
-  }, [onSelect, onClose]);
+  }, [selectedEmojis, previewUrl, previewError, onSelect, onClose]);
 
-  const handlePreviewCombination = useCallback((emoji1: string, emoji2: string) => {
-    const url = getEmojiKitchenUrl(emoji1, emoji2);
-    if (url) {
-      setPreviewCombination({ url, emoji1, emoji2 });
-    }
+  // Clear selection
+  const handleClear = useCallback(() => {
+    setSelectedEmojis([]);
+    setPreviewUrl(null);
+    setPreviewError(false);
   }, []);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      setSelectedEmoji(null);
+      setSelectedEmojis([]);
       setSearch('');
-      setActiveTab('emojis');
-      setPreviewCombination(null);
+      setPreviewUrl(null);
+      setPreviewError(false);
     }
   }, [open]);
 
@@ -235,12 +231,73 @@ export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
       <DialogContent className="sm:max-w-md p-0 gap-0">
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Smile className="w-4 h-4" />
-            Emoji & Stickers
+            Emoji
+            {selectedEmojis.length > 0 && (
+              <span className="text-xs font-normal text-muted-foreground">
+                (select 2 to combine)
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
         
         <div className="p-4 pt-2">
+          {/* Selection preview */}
+          {selectedEmojis.length > 0 && (
+            <div className="mb-3 p-2 bg-secondary rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {selectedEmojis.map((emoji, idx) => (
+                    <span key={idx} className="text-2xl">{emoji}</span>
+                  ))}
+                  {selectedEmojis.length === 2 && (
+                    <>
+                      <span className="text-muted-foreground">=</span>
+                      {previewUrl && !previewError ? (
+                        <img 
+                          src={previewUrl} 
+                          alt="Combined" 
+                          className="w-8 h-8"
+                          onError={() => setPreviewError(true)}
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">No combo</span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {selectedEmojis.length === 1 && (
+                    <button
+                      onClick={() => handleSendSingle(selectedEmojis[0])}
+                      className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded"
+                    >
+                      Send
+                    </button>
+                  )}
+                  {selectedEmojis.length === 2 && previewUrl && !previewError && (
+                    <button
+                      onClick={handleSendCombination}
+                      className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded"
+                    >
+                      Send
+                    </button>
+                  )}
+                  <button
+                    onClick={handleClear}
+                    className="p-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {selectedEmojis.length === 1 && hasCombinations(selectedEmojis[0]) && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Click another emoji to combine
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Search */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -253,175 +310,37 @@ export function EmojiPicker({ open, onClose, onSelect }: EmojiPickerProps) {
             />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full mb-3">
-              <TabsTrigger value="emojis" className="flex-1 gap-1">
-                <Smile className="w-3 h-3" />
-                Emojis
-              </TabsTrigger>
-              <TabsTrigger value="kitchen" className="flex-1 gap-1">
-                <Sparkles className="w-3 h-3" />
-                Kitchen
-              </TabsTrigger>
-              <TabsTrigger value="stickers" className="flex-1 gap-1">
-                <Sticker className="w-3 h-3" />
-                Stickers
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Standard Emojis Tab */}
-            <TabsContent value="emojis" className="mt-0">
-              <ScrollArea className="h-64">
-                <div className="space-y-3">
-                  {Object.entries(filteredCategories).map(([category, emojis]) => (
-                    <div key={category}>
-                      <h4 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">{category}</h4>
-                      <div className="grid grid-cols-8 gap-0.5">
-                        {emojis.map((emoji, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSelect(emoji)}
-                            className="w-8 h-8 flex items-center justify-center text-lg hover:bg-secondary rounded transition-colors"
-                          >
-                            {emoji}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {Object.keys(filteredCategories).length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      No emojis found
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            {/* Emoji Kitchen Tab */}
-            <TabsContent value="kitchen" className="mt-0">
-              <ScrollArea className="h-64">
-                {selectedEmoji ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Combine {selectedEmoji} with:
-                      </span>
-                      <button
-                        onClick={() => {
-                          setSelectedEmoji(null);
-                          setPreviewCombination(null);
-                        }}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    {/* Preview */}
-                    {previewCombination && (
-                      <div className="flex items-center justify-center gap-2 p-2 bg-secondary rounded-lg">
-                        <span className="text-2xl">{previewCombination.emoji1}</span>
-                        <span className="text-lg text-muted-foreground">+</span>
-                        <span className="text-2xl">{previewCombination.emoji2}</span>
-                        <span className="text-lg text-muted-foreground">=</span>
-                        <img 
-                          src={previewCombination.url} 
-                          alt="Combined emoji" 
-                          className="w-10 h-10"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                        <button
-                          onClick={() => handleCreateCombination(previewCombination.emoji1, previewCombination.emoji2)}
-                          className="ml-2 text-xs bg-primary text-primary-foreground px-2 py-1 rounded"
-                        >
-                          Send
-                        </button>
-                      </div>
-                    )}
-                    
-                    <div className="grid grid-cols-8 gap-0.5">
-                      {COMBINATION_BASES.map((emoji, idx) => (
+          {/* Emoji grid */}
+          <ScrollArea className="h-64">
+            <div className="space-y-3">
+              {Object.entries(filteredCategories).map(([category, emojis]) => (
+                <div key={category}>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">{category}</h4>
+                  <div className="grid grid-cols-8 gap-0.5">
+                    {emojis.map((emoji, idx) => {
+                      const isSelected = selectedEmojis.includes(emoji);
+                      return (
                         <button
                           key={idx}
-                          onClick={() => handlePreviewCombination(selectedEmoji, emoji)}
-                          onDoubleClick={() => handleCreateCombination(selectedEmoji, emoji)}
-                          className="w-8 h-8 flex items-center justify-center text-lg hover:bg-secondary rounded transition-colors"
+                          onClick={() => handleEmojiClick(emoji)}
+                          className={`w-8 h-8 flex items-center justify-center text-lg hover:bg-secondary rounded transition-colors ${
+                            isSelected ? 'bg-primary/20 ring-1 ring-primary' : ''
+                          }`}
                         >
                           {emoji}
                         </button>
-                      ))}
-                    </div>
-                    <p className="text-[10px] text-muted-foreground text-center">
-                      Click to preview, double-click to send
-                    </p>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-xs text-muted-foreground text-center mb-2">
-                      Select an emoji to combine with others!
-                    </p>
-                    <div className="grid grid-cols-8 gap-0.5">
-                      {COMBINATION_BASES.map((emoji, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setSelectedEmoji(emoji)}
-                          className="w-8 h-8 flex items-center justify-center text-lg hover:bg-secondary rounded transition-colors"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="border-t border-border pt-3 mt-3">
-                      <h4 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">All Emojis</h4>
-                      {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
-                        <div key={category} className="mb-2">
-                          <div className="grid grid-cols-8 gap-0.5">
-                            {emojis.slice(0, 16).map((emoji, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => setSelectedEmoji(emoji)}
-                                className="w-8 h-8 flex items-center justify-center text-lg hover:bg-secondary rounded transition-colors"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </ScrollArea>
-            </TabsContent>
-
-            {/* Stickers Tab */}
-            <TabsContent value="stickers" className="mt-0">
-              <ScrollArea className="h-64">
-                <div className="space-y-3">
-                  {STICKER_PACKS.map((pack) => (
-                    <div key={pack.name}>
-                      <h4 className="text-xs font-medium text-muted-foreground mb-1.5 px-1">{pack.name}</h4>
-                      <div className="grid grid-cols-6 gap-1">
-                        {pack.stickers.map((sticker, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => handleSelect(`[STICKER:${sticker.emoji}]`)}
-                            className="aspect-square flex flex-col items-center justify-center p-1 hover:bg-secondary rounded transition-colors"
-                            title={sticker.name}
-                          >
-                            <span className="text-2xl">{sticker.emoji}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
+              ))}
+              {Object.keys(filteredCategories).length === 0 && (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  No emojis found
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </DialogContent>
     </Dialog>

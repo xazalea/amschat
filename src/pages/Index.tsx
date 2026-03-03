@@ -63,7 +63,9 @@ const Index = () => {
         roomCode={state.roomCode}
         users={state.users}
         roles={roleState.roles}
+        messages={state.messages}
         getUserRoles={getUserRoles}
+        hasPermission={hasPermission}
         onLeave={leaveRoom}
       />
       <ChatArea

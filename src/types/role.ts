@@ -19,16 +19,8 @@ export const DIFFICULTY_CONFIG: Record<PermissionDifficulty, { approvalPercent: 
 };
 
 // Only permissions that are actually role-exclusive (not default behavior)
+// Default behavior (everyone can do): send messages, images, gifs, links, reactions, emojis, edit own messages, etc.
 export const PERMISSIONS = {
-  // Level 1 - Basic (Tier 1 difficulty - 50% approval)
-  use_reactions: { name: 'Use Reactions', level: 1, description: 'React to messages with emojis', category: 'Messages', difficulty: 1 },
-  send_images: { name: 'Send Images', level: 1, description: 'Share images in chat', category: 'Media', difficulty: 1 },
-  send_links: { name: 'Send Links', level: 1, description: 'Post URLs in chat', category: 'Messages', difficulty: 1 },
-  mention_users: { name: 'Mention Users', level: 1, description: 'Mention other users with @', category: 'Messages', difficulty: 1 },
-  send_gifs: { name: 'Send GIFs', level: 1, description: 'Share GIFs in chat', category: 'Media', difficulty: 1 },
-  vote_polls: { name: 'Vote in Polls', level: 1, description: 'Participate in polls', category: 'Polls', difficulty: 1 },
-  custom_emoji: { name: 'Custom Emojis', level: 1, description: 'Use emoji kitchen combinations', category: 'Media', difficulty: 1 },
-  
   // Level 2 - Intermediate (Tier 2 difficulty - 60% approval)
   slow_mode_immunity: { name: 'Slow Mode Immunity', level: 2, description: 'Bypass slow mode restrictions', category: 'Moderation', difficulty: 2 },
   pin_messages: { name: 'Pin Messages', level: 2, description: 'Pin important messages', category: 'Messages', difficulty: 2 },
@@ -45,9 +37,9 @@ export const PERMISSIONS = {
   timeout_users: { name: 'Timeout Users', level: 3, description: 'Temporary mute users', category: 'Moderation', difficulty: 3 },
   manage_polls: { name: 'Manage Polls', level: 3, description: 'Edit/close any poll', category: 'Polls', difficulty: 3 },
   manage_nicknames: { name: 'Manage Nicknames', level: 3, description: 'Change others nicknames', category: 'Profile', difficulty: 3 },
-  view_deleted: { name: 'View Deleted', level: 3, description: 'See deleted messages', category: 'Messages', difficulty: 3 },
+  view_deleted: { name: 'View Deleted', level: 3, description: 'See deleted messages in logs', category: 'Messages', difficulty: 3 },
   mention_everyone: { name: 'Mention Everyone', level: 3, description: 'Use @everyone to notify all', category: 'Messages', difficulty: 3 },
-  file_sharing: { name: 'File Sharing', level: 3, description: 'Share files (PDFs, docs)', category: 'Media', difficulty: 3 },
+  view_logs: { name: 'View Message Logs', level: 3, description: 'Access message edit/delete history', category: 'Messages', difficulty: 3 },
   
   // Level 4 - Admin (Tier 4 difficulty - 85% approval)
   delete_others_messages: { name: 'Delete Others Messages', level: 4, description: 'Delete any message', category: 'Messages', difficulty: 4 },
@@ -58,7 +50,6 @@ export const PERMISSIONS = {
   create_announcements: { name: 'Create Announcements', level: 4, description: 'Send highlighted announcements', category: 'Messages', difficulty: 4 },
   pin_any_message: { name: 'Pin Any Message', level: 4, description: 'Pin messages anywhere', category: 'Messages', difficulty: 4 },
   priority_messages: { name: 'Priority Messages', level: 4, description: 'Messages highlighted at top', category: 'Messages', difficulty: 4 },
-  private_threads: { name: 'Private Threads', level: 4, description: 'Create private thread channels', category: 'Messages', difficulty: 4 },
   
   // Level 5 - Super Admin (Tier 5 difficulty - 90% approval)
   admin_access: { name: 'Admin Access', level: 5, description: 'Full admin panel access', category: 'Admin', difficulty: 5 },
@@ -67,8 +58,6 @@ export const PERMISSIONS = {
   administrator: { name: 'Administrator', level: 5, description: 'Full administrator access', category: 'Admin', difficulty: 5 },
   manage_all_roles: { name: 'Manage All Roles', level: 5, description: 'Edit any role settings', category: 'Roles', difficulty: 5 },
   bypass_all_limits: { name: 'Bypass All Limits', level: 5, description: 'Ignore all restrictions', category: 'Admin', difficulty: 5 },
-  voice_chat: { name: 'Voice Chat Host', level: 5, description: 'Host voice chat rooms', category: 'Media', difficulty: 5 },
-  animated_avatar: { name: 'Animated Avatar', level: 5, description: 'Use animated profile pictures', category: 'Profile', difficulty: 5 },
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;
@@ -178,24 +167,19 @@ export function getHighestRole(roles: Role[]): Role | null {
 // Default role presets
 export const DEFAULT_ROLE_PRESETS: Omit<Role, 'id' | 'createdAt' | 'createdBy'>[] = [
   {
-    name: 'Member',
-    color: 'gray',
-    permissions: ['use_reactions', 'send_images', 'send_links', 'mention_users', 'send_gifs', 'vote_polls'],
-  },
-  {
     name: 'Regular',
     color: 'blue',
-    permissions: ['use_reactions', 'send_images', 'send_links', 'mention_users', 'send_gifs', 'vote_polls', 'slow_mode_immunity', 'pin_messages', 'create_polls', 'embed_links', 'custom_status', 'custom_emoji'],
+    permissions: ['slow_mode_immunity', 'pin_messages', 'create_polls', 'embed_links', 'custom_status'],
   },
   {
     name: 'Moderator',
     color: 'green',
-    permissions: ['use_reactions', 'send_images', 'send_links', 'mention_users', 'send_gifs', 'vote_polls', 'slow_mode_immunity', 'pin_messages', 'create_polls', 'embed_links', 'custom_status', 'custom_emoji', 'kick_users', 'mute_users', 'warn_users', 'timeout_users', 'manage_polls', 'manage_nicknames', 'view_deleted', 'set_slow_mode', 'mention_everyone'],
+    permissions: ['slow_mode_immunity', 'pin_messages', 'create_polls', 'embed_links', 'custom_status', 'kick_users', 'mute_users', 'warn_users', 'timeout_users', 'manage_polls', 'manage_nicknames', 'view_deleted', 'set_slow_mode', 'mention_everyone', 'view_logs'],
   },
   {
     name: 'Admin',
     color: 'purple',
-    permissions: ['use_reactions', 'send_images', 'send_links', 'mention_users', 'send_gifs', 'vote_polls', 'slow_mode_immunity', 'pin_messages', 'create_polls', 'embed_links', 'custom_status', 'custom_emoji', 'kick_users', 'mute_users', 'warn_users', 'timeout_users', 'manage_polls', 'manage_nicknames', 'view_deleted', 'set_slow_mode', 'mention_everyone', 'delete_others_messages', 'freeze_chat', 'manage_roles', 'ban_users', 'unban_users', 'create_announcements', 'pin_any_message', 'priority_messages', 'file_sharing'],
+    permissions: ['slow_mode_immunity', 'pin_messages', 'create_polls', 'embed_links', 'custom_status', 'kick_users', 'mute_users', 'warn_users', 'timeout_users', 'manage_polls', 'manage_nicknames', 'view_deleted', 'set_slow_mode', 'mention_everyone', 'view_logs', 'delete_others_messages', 'freeze_chat', 'manage_roles', 'ban_users', 'unban_users', 'create_announcements', 'pin_any_message', 'priority_messages'],
   },
   {
     name: 'Super Admin',

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ChatMessage, RoomUser, ChatState, MessageReaction, SlowMode, PinnedMessage, Bookmark } from '@/types/chat';
+import { ChatMessage, RoomUser, ChatState, MessageReaction, SlowMode, PinnedMessage, Bookmark, MessageLogEntry, MessageEdit } from '@/types/chat';
 import { Role, RolePoll, UserRole, RoleState, PermissionKey, RoleColorKey } from '@/types/role';
 import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
@@ -94,20 +94,12 @@ export function useChat() {
       supabase.removeChannel(channelRef.current);
     }
 
-    const systemMsg: ChatMessage = {
-      id: generateId(),
-      username: 'system',
-      text: `${username} joined.`,
-      timestamp: Date.now(),
-      type: 'system',
-    };
-
     setState(prev => ({
       ...prev,
       username,
       roomCode,
       isJoined: true,
-      messages: [systemMsg],
+      messages: [],
       users: [],
       typingUsers: [],
       frozen: false,
@@ -134,6 +126,10 @@ export function useChat() {
 
     channel.on('broadcast', { event: 'system' }, (payload) => {
       const msg = payload.payload as ChatMessage;
+      // Don't add duplicate join messages for yourself
+      if (msg.text.includes('joined') && msg.text.includes(usernameRef.current)) {
+        return;
+      }
       setState(prev => ({ ...prev, messages: [...prev.messages, msg] }));
     });
 
@@ -415,7 +411,15 @@ export function useChat() {
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await channel.track({ username, joinedAt: Date.now() });
-        channel.send({ type: 'broadcast', event: 'system', payload: systemMsg });
+        // Broadcast join message to others
+        const joinMsg: ChatMessage = {
+          id: generateId(),
+          username: 'system',
+          text: `${username} joined.`,
+          timestamp: Date.now(),
+          type: 'system',
+        };
+        channel.send({ type: 'broadcast', event: 'system', payload: joinMsg });
       }
     });
 
@@ -543,22 +547,55 @@ export function useChat() {
   }, []);
 
   const editMessage = useCallback((messageId: string, newText: string) => {
+    const username = usernameRef.current;
+    
     setState(prev => ({
       ...prev,
-      messages: prev.messages.map(m => m.id === messageId ? { ...m, text: newText, edited: true } : m),
+      messages: prev.messages.map(m => {
+        if (m.id !== messageId) return m;
+        
+        // Create edit history entry
+        const editEntry: MessageEdit = {
+          previousText: m.text,
+          editedAt: Date.now(),
+          editedBy: username,
+        };
+        
+        return {
+          ...m,
+          text: newText,
+          edited: true,
+          originalText: m.originalText || m.text, // Keep track of original
+          editHistory: [...(m.editHistory || []), editEntry],
+        };
+      }),
     }));
+    
     if (channelRef.current) {
-      channelRef.current.send({ type: 'broadcast', event: 'edit', payload: { messageId, newText } });
+      channelRef.current.send({ type: 'broadcast', event: 'edit', payload: { messageId, newText, editedBy: username } });
     }
   }, []);
 
   const unsendMessage = useCallback((messageId: string) => {
+    const username = usernameRef.current;
+    
     setState(prev => ({
       ...prev,
-      messages: prev.messages.map(m => m.id === messageId ? { ...m, text: '', deleted: true } : m),
+      messages: prev.messages.map(m => {
+        if (m.id !== messageId) return m;
+        
+        return {
+          ...m,
+          text: '',
+          deleted: true,
+          deletedAt: Date.now(),
+          deletedBy: username,
+        };
+      }),
     }));
+    
     if (channelRef.current) {
-      channelRef.current.send({ type: 'broadcast', event: 'unsend', payload: { messageId } });
+      channelRef.current.send({ type: 'broadcast', event: 'unsend', payload: { messageId, deletedBy: username } });
     }
   }, []);
 

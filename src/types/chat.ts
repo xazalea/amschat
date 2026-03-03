@@ -3,6 +3,13 @@ export interface MessageReaction {
   users: string[]; // usernames who reacted
 }
 
+// Message edit history entry
+export interface MessageEdit {
+  previousText: string;
+  editedAt: number;
+  editedBy: string;
+}
+
 export interface ChatMessage {
   id: string;
   username: string;
@@ -12,6 +19,8 @@ export interface ChatMessage {
   status?: 'sent' | 'delivered' | 'read';
   edited?: boolean;
   deleted?: boolean;
+  deletedAt?: number;
+  deletedBy?: string;
   imageUrl?: string;
   imageExpiry?: number;
   pollId?: string;
@@ -24,6 +33,21 @@ export interface ChatMessage {
     username: string;
     text: string;
   };
+  // Edit history - array of previous versions
+  editHistory?: MessageEdit[];
+  // Original text (before any edits)
+  originalText?: string;
+}
+
+// Message log entry for tracking all changes
+export interface MessageLogEntry {
+  id: string;
+  messageId: string;
+  action: 'created' | 'edited' | 'deleted' | 'restored';
+  username: string;
+  previousText?: string;
+  newText?: string;
+  timestamp: number;
 }
 
 export interface RoomUser {

@@ -1,20 +1,27 @@
-import { Users, LogOut, Shield, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, LogOut, Shield, ChevronDown, ChevronRight, History } from 'lucide-react';
 import { useState } from 'react';
-import { RoomUser } from '@/types/chat';
-import { Role, ROLE_COLORS } from '@/types/role';
+import { RoomUser, ChatMessage } from '@/types/chat';
+import { Role, ROLE_COLORS, PermissionKey } from '@/types/role';
 import { UserRoleBadges, RoleBadge } from '@/components/RoleBadge';
+import { MessageLogs } from '@/components/MessageLogs';
 
 interface ChatSidebarProps {
   roomCode: string;
   users: RoomUser[];
   roles: Role[];
+  messages: ChatMessage[];
   getUserRoles: (username: string) => Role[];
+  hasPermission: (permission: PermissionKey) => boolean;
   onLeave: () => void;
 }
 
-export function ChatSidebar({ roomCode, users, roles, getUserRoles, onLeave }: ChatSidebarProps) {
+export function ChatSidebar({ roomCode, users, roles, messages, getUserRoles, hasPermission, onLeave }: ChatSidebarProps) {
   const [showRoles, setShowRoles] = useState(true);
   const [showUsers, setShowUsers] = useState(true);
+  const [showLogs, setShowLogs] = useState(false);
+  
+  const canViewLogs = hasPermission('view_logs');
+  const canViewDeleted = hasPermission('view_deleted');
 
   return (
     <div className="w-56 h-full bg-card flex flex-col shrink-0 hidden md:flex">
@@ -91,7 +98,18 @@ export function ChatSidebar({ roomCode, users, roles, getUserRoles, onLeave }: C
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 space-y-2">
+        {/* Message Logs Button */}
+        {canViewLogs && (
+          <button
+            onClick={() => setShowLogs(true)}
+            className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 rounded-md hover:bg-muted"
+          >
+            <History className="w-4 h-4" />
+            Message Logs
+          </button>
+        )}
+        
         <button
           onClick={onLeave}
           className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 rounded-md hover:bg-muted"
@@ -100,6 +118,14 @@ export function ChatSidebar({ roomCode, users, roles, getUserRoles, onLeave }: C
           Leave
         </button>
       </div>
+
+      {/* Message Logs Dialog */}
+      <MessageLogs
+        open={showLogs}
+        onClose={() => setShowLogs(false)}
+        messages={messages}
+        canViewDeleted={canViewDeleted}
+      />
     </div>
   );
 }
