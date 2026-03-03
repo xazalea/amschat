@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bell, BellOff, LogOut, Plus, Image, Smile } from 'lucide-react';
+import { Send, Bell, BellOff, LogOut, Plus, Image, Smile, Clapperboard, Sticker } from 'lucide-react';
 import { ChatMessage } from '@/types/chat';
 import { Role, RolePoll, PermissionKey } from '@/types/role';
 import { Progress } from '@/components/ui/progress';
@@ -13,6 +13,7 @@ import { PollMessage } from '@/components/PollMessage';
 import { UserRoleBadges } from '@/components/RoleBadge';
 import { GifPicker } from '@/components/GifPicker';
 import { StickerPicker } from '@/components/StickerPicker';
+import { EmojiPicker } from '@/components/EmojiPicker';
 
 interface ChatAreaProps {
   messages: ChatMessage[];
@@ -42,6 +43,46 @@ const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
 function isImageExpired(expiry?: number) {
   if (!expiry) return false;
   return Date.now() > expiry;
+}
+
+// Parse message text for GIF/STICKER patterns
+function parseMessageContent(text: string): { type: 'text' | 'gif' | 'sticker'; content: string }[] {
+  const parts: { type: 'text' | 'gif' | 'sticker'; content: string }[] = [];
+  
+  // Match [GIF](url) or [STICKER](url) patterns
+  const pattern = /\[(GIF|STICKER)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = pattern.exec(text)) !== null) {
+    // Add any text before this match
+    if (match.index > lastIndex) {
+      const textContent = text.slice(lastIndex, match.index).trim();
+      if (textContent) {
+        parts.push({ type: 'text', content: textContent });
+      }
+    }
+    
+    // Add the GIF or STICKER
+    const type = match[1] === 'GIF' ? 'gif' : 'sticker';
+    parts.push({ type, content: match[2] });
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add any remaining text
+  if (lastIndex < text.length) {
+    const textContent = text.slice(lastIndex).trim();
+    if (textContent) {
+      parts.push({ type: 'text', content: textContent });
+    }
+  }
+  
+  // If no patterns found, return the whole text
+  if (parts.length === 0 && text.trim()) {
+    parts.push({ type: 'text', content: text });
+  }
+  
+  return parts;
 }
 
 export function ChatArea({
@@ -74,6 +115,7 @@ export function ChatArea({
   const [dragging, setDragging] = useState(false);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
@@ -283,7 +325,37 @@ export function ChatArea({
                   {msg.imageUrl && imageExpired && (
                     <span className="text-[11px] italic text-muted-foreground">Image expired</span>
                   )}
-                  {msg.text}
+                  {(() => {
+                    const contentParts = parseMessageContent(msg.text);
+                    if (contentParts.length === 0) return null;
+                    
+                    return contentParts.map((part, idx) => {
+                      if (part.type === 'gif') {
+                        return (
+                          <img
+                            key={idx}
+                            src={part.content}
+                            alt="GIF"
+                            className="max-w-full rounded-lg mb-1"
+                            loading="lazy"
+                            style={{ maxHeight: '200px' }}
+                          />
+                        );
+                      }
+                      if (part.type === 'sticker') {
+                        return (
+                          <img
+                            key={idx}
+                            src={part.content}
+                            alt="Sticker"
+                            className="w-16 h-16 object-contain mb-1"
+                            loading="lazy"
+                          />
+                        );
+                      }
+                      return <span key={idx}>{part.content}</span>;
+                    });
+                  })()}
                 </div>
               )}
               <div className={`flex items-center gap-1 ${isOwn ? 'justify-end mr-1' : 'ml-1'}`}>
@@ -370,6 +442,17 @@ export function ChatArea({
         }}
       />
 
+      {/* Emoji Picker */}
+      <EmojiPicker
+        open={emojiPickerOpen}
+        onClose={() => setEmojiPickerOpen(false)}
+        onSelect={(emoji) => {
+          // Insert emoji at cursor position or append to end
+          setInput(prev => prev + emoji);
+          setEmojiPickerOpen(false);
+        }}
+      />
+
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-3 shrink-0">
         <div className="flex gap-2 items-center">
@@ -388,7 +471,7 @@ export function ChatArea({
             className="p-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
             title="Send GIF"
           >
-            <Image className="w-4 h-4" />
+            <Clapperboard className="w-4 h-4" />
           </button>
           <button
             type="button"
@@ -396,6 +479,15 @@ export function ChatArea({
             disabled={isInputDisabled}
             className="p-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
             title="Send Sticker"
+          >
+            <Sticker className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setEmojiPickerOpen(true)}
+            disabled={isInputDisabled}
+            className="p-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+            title="Add Emoji"
           >
             <Smile className="w-4 h-4" />
           </button>

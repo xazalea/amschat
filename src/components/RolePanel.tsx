@@ -152,7 +152,7 @@ export function RolePanel({ onClose, onSubmit }: RolePanelProps) {
           </button>
         </div>
 
-        <Tabs defaultValue="basics" className="w-full flex-1 flex flex-col min-h-0">
+        <Tabs defaultValue="basics" className="w-full flex-1 flex flex-col min-h-0 overflow-hidden">
           <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent p-0 shrink-0">
             <TabsTrigger
               value="basics"
@@ -168,7 +168,7 @@ export function RolePanel({ onClose, onSubmit }: RolePanelProps) {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="basics" className="p-4 space-y-4 mt-0 overflow-y-auto">
+          <TabsContent value="basics" className="p-4 space-y-4 mt-0 overflow-y-auto flex-1">
             {/* Quick Presets */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Quick Presets</Label>
@@ -401,7 +401,7 @@ export function RolePanel({ onClose, onSubmit }: RolePanelProps) {
               onClick={handleSubmit}
               disabled={!name.trim() || permissions.length === 0}
             >
-              Create Poll
+              Request Role
             </Button>
           </div>
         </div>
