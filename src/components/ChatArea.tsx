@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Bell, BellOff, LogOut, Plus, Image, Smile, Clapperboard, Sticker } from 'lucide-react';
+import { Send, Bell, BellOff, LogOut, Plus, Smile, Clapperboard } from 'lucide-react';
 import { ChatMessage } from '@/types/chat';
 import { Role, RolePoll, PermissionKey } from '@/types/role';
 import { Progress } from '@/components/ui/progress';
@@ -10,9 +10,8 @@ import {
   ContextMenuItem,
 } from '@/components/ui/context-menu';
 import { PollMessage } from '@/components/PollMessage';
-import { UserRoleBadges } from '@/components/RoleBadge';
+import { ColoredUsername } from '@/components/RoleBadge';
 import { GifPicker } from '@/components/GifPicker';
-import { StickerPicker } from '@/components/StickerPicker';
 import { EmojiPicker } from '@/components/EmojiPicker';
 
 interface ChatAreaProps {
@@ -45,12 +44,12 @@ function isImageExpired(expiry?: number) {
   return Date.now() > expiry;
 }
 
-// Parse message text for GIF/STICKER patterns
-function parseMessageContent(text: string): { type: 'text' | 'gif' | 'sticker'; content: string }[] {
-  const parts: { type: 'text' | 'gif' | 'sticker'; content: string }[] = [];
+// Parse message text for GIF/STICKER/EMOJI_KITCHEN patterns
+function parseMessageContent(text: string): { type: 'text' | 'gif' | 'sticker' | 'emojiKitchen'; content: string; emoji1?: string; emoji2?: string }[] {
+  const parts: { type: 'text' | 'gif' | 'sticker' | 'emojiKitchen'; content: string; emoji1?: string; emoji2?: string }[] = [];
   
-  // Match [GIF](url) or [STICKER](url) patterns
-  const pattern = /\[(GIF|STICKER)\]\(([^)]+)\)/g;
+  // Match [GIF](url), [STICKER](url), or [EMOJI_KITCHEN:emoji1:emoji2:url] patterns
+  const pattern = /\[(GIF|STICKER)\]\(([^)]+)\)|\[EMOJI_KITCHEN:([^:]+):([^:]+):([^\]]+)\]/g;
   let lastIndex = 0;
   let match;
   
@@ -63,9 +62,20 @@ function parseMessageContent(text: string): { type: 'text' | 'gif' | 'sticker'; 
       }
     }
     
-    // Add the GIF or STICKER
-    const type = match[1] === 'GIF' ? 'gif' : 'sticker';
-    parts.push({ type, content: match[2] });
+    if (match[1]) {
+      // GIF or STICKER
+      const type = match[1] === 'GIF' ? 'gif' : 'sticker';
+      parts.push({ type, content: match[2] });
+    } else if (match[3] && match[4] && match[5]) {
+      // EMOJI_KITCHEN
+      parts.push({ 
+        type: 'emojiKitchen', 
+        emoji1: match[3], 
+        emoji2: match[4], 
+        content: match[5] 
+      });
+    }
+    
     lastIndex = match.index + match[0].length;
   }
   
@@ -114,7 +124,6 @@ export function ChatArea({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [gifPickerOpen, setGifPickerOpen] = useState(false);
-  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -292,8 +301,7 @@ export function ChatArea({
             <div className="max-w-[75%] space-y-0.5">
               {!isOwn && (
                 <div className="flex items-center gap-1.5 ml-1">
-                  <span className="text-[11px] text-muted-foreground">{msg.username}</span>
-                  <UserRoleBadges roles={userRoles} size="xs" />
+                  <ColoredUsername username={msg.username} roles={userRoles} className="text-[11px]" />
                 </div>
               )}
               {editingId === msg.id ? (
@@ -344,11 +352,16 @@ export function ChatArea({
                       }
                       if (part.type === 'sticker') {
                         return (
+                          <span key={idx} className="text-4xl inline-block">{part.content}</span>
+                        );
+                      }
+                      if (part.type === 'emojiKitchen') {
+                        return (
                           <img
                             key={idx}
                             src={part.content}
-                            alt="Sticker"
-                            className="w-16 h-16 object-contain mb-1"
+                            alt={`${part.emoji1}+${part.emoji2}`}
+                            className="w-12 h-12 inline-block mb-1"
                             loading="lazy"
                           />
                         );
@@ -431,24 +444,22 @@ export function ChatArea({
         }}
       />
 
-      {/* Sticker Picker */}
-      <StickerPicker
-        open={stickerPickerOpen}
-        onClose={() => setStickerPickerOpen(false)}
-        onSelect={(stickerUrl) => {
-          // Send sticker as a message
-          onSend(`[STICKER](${stickerUrl})`);
-          setStickerPickerOpen(false);
-        }}
-      />
-
-      {/* Emoji Picker */}
+      {/* Emoji & Sticker Picker */}
       <EmojiPicker
         open={emojiPickerOpen}
         onClose={() => setEmojiPickerOpen(false)}
-        onSelect={(emoji) => {
-          // Insert emoji at cursor position or append to end
-          setInput(prev => prev + emoji);
+        onSelect={(content) => {
+          // Handle different content types from the unified picker
+          if (content.startsWith('[EMOJI_KITCHEN:')) {
+            // Emoji kitchen combination - send as image
+            onSend(content);
+          } else if (content.startsWith('[STICKER:')) {
+            // Sticker - send as is
+            onSend(content);
+          } else {
+            // Regular emoji - append to input
+            setInput(prev => prev + content);
+          }
           setEmojiPickerOpen(false);
         }}
       />
@@ -475,19 +486,10 @@ export function ChatArea({
           </button>
           <button
             type="button"
-            onClick={() => setStickerPickerOpen(true)}
-            disabled={isInputDisabled}
-            className="p-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-            title="Send Sticker"
-          >
-            <Sticker className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
             onClick={() => setEmojiPickerOpen(true)}
             disabled={isInputDisabled}
             className="p-2.5 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-            title="Add Emoji"
+            title="Emoji & Stickers"
           >
             <Smile className="w-4 h-4" />
           </button>
