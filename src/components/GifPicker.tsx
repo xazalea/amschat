@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Search, Loader2, Clapperboard } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,115 +13,77 @@ interface GifPickerProps {
 interface GifData {
   id: string;
   title: string;
-  images: {
-    original: { url: string };
-    preview: { url: string };
-  };
+  url: string;
+  preview: string;
 }
 
-// Using Tenor API (free, no key required for basic usage)
-const TENOR_API_KEY = 'AIzaSyCPy4K10W_7qSmn9xWZvI9ePGl8lNlJ_3I'; // Public Tenor API key
-const CLIENT_KEY = 'qwerch-chat';
+// Use a collection of popular GIFs from Giphy's CDN
+// These are direct URLs that don't require API calls
+const TRENDING_GIFS: GifData[] = [
+  { id: '1', title: 'Applause', url: 'https://media.giphy.com/media/a0h7sAqON67nO/giphy.gif', preview: 'https://media.giphy.com/media/a0h7sAqON67nO/200.gif' },
+  { id: '2', title: 'Thumbs Up', url: 'https://media.giphy.com/media/kEtm4mSTbxvH7j3buI/giphy.gif', preview: 'https://media.giphy.com/media/kEtm4mSTbxvH7j3buI/200.gif' },
+  { id: '3', title: 'Wow', url: 'https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif', preview: 'https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/200.gif' },
+  { id: '4', title: 'Laughing', url: 'https://media.giphy.com/media/dzaUX7CAG0Ahi/giphy.gif', preview: 'https://media.giphy.com/media/dzaUX7CAG0Ahi/200.gif' },
+  { id: '5', title: 'Love', url: 'https://media.giphy.com/media/ML1Mgl0PQvYznvfZ55/giphy.gif', preview: 'https://media.giphy.com/media/ML1Mgl0PQvYznvfZ55/200.gif' },
+  { id: '6', title: 'Dancing', url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/200.gif' },
+  { id: '7', title: 'Excited', url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif', preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/200.gif' },
+  { id: '8', title: 'Shocked', url: 'https://media.giphy.com/media/5VKbvrjlpVcA6wbDoe/giphy.gif', preview: 'https://media.giphy.com/media/5VKbvrjlpVcA6wbDoe/200.gif' },
+  { id: '9', title: 'Thinking', url: 'https://media.giphy.com/media/4JVTF9CYRe6p6/giphy.gif', preview: 'https://media.giphy.com/media/4JVTF9CYRe6p6/200.gif' },
+  { id: '10', title: 'Sad', url: 'https://media.giphy.com/media/3o7qDKzJh0LLR9OqNq/giphy.gif', preview: 'https://media.giphy.com/media/3o7qDKzJh0LLR9OqNq/200.gif' },
+  { id: '11', title: 'Angry', url: 'https://media.giphy.com/media/xeXEpNqf1yPBLuS0Gv/giphy.gif', preview: 'https://media.giphy.com/media/xeXEpNqf1yPBLuS0Gv/200.gif' },
+  { id: '12', title: 'Cool', url: 'https://media.giphy.com/media/3o7abB06u9bBz6PglW/giphy.gif', preview: 'https://media.giphy.com/media/3o7abB06u9bBz6PglW/200.gif' },
+  { id: '13', title: 'Party', url: 'https://media.giphy.com/media/26BRuo6sLetdllPAQ/giphy.gif', preview: 'https://media.giphy.com/media/26BRuo6sLetdllPAQ/200.gif' },
+  { id: '14', title: 'Confused', url: 'https://media.giphy.com/media/1qjwAvvT5B9vKnE5O3/giphy.gif', preview: 'https://media.giphy.com/media/1qjwAvvT5B9vKnE5O3/200.gif' },
+  { id: '15', title: 'Sleepy', url: 'https://media.giphy.com/media/13HgwGsXF0aiGY/giphy.gif', preview: 'https://media.giphy.com/media/13HgwGsXF0aiGY/200.gif' },
+  { id: '16', title: 'Silly', url: 'https://media.giphy.com/media/3oKIPnAia1t3ZAq9CM/giphy.gif', preview: 'https://media.giphy.com/media/3oKIPnAia1t3ZAq9CM/200.gif' },
+  { id: '17', title: 'Nervous', url: 'https://media.giphy.com/media/3o7abK7vOwLOf9v0bG/giphy.gif', preview: 'https://media.giphy.com/media/3o7abK7vOwLOf9v0bG/200.gif' },
+  { id: '18', title: 'Proud', url: 'https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif', preview: 'https://media.giphy.com/media/26u4cqiYI30juCOGY/200.gif' },
+  { id: '19', title: 'Surprised', url: 'https://media.giphy.com/media/5GoVLqeAOq6nkqO4Ws/giphy.gif', preview: 'https://media.giphy.com/media/5GoVLqeAOq6nkqO4Ws/200.gif' },
+  { id: '20', title: 'Bored', url: 'https://media.giphy.com/media/jJxaXrsOkB7W0/giphy.gif', preview: 'https://media.giphy.com/media/jJxaXrsOkB7W0/200.gif' },
+];
 
 export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
-  const [gifs, setGifs] = useState<GifData[]>([]);
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [nextPos, setNextPos] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [gifs, setGifs] = useState<GifData[]>(TRENDING_GIFS);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loadingRef = useRef(false);
 
-  const fetchGifs = useCallback(async (searchTerm: string, pos: string | null, append: boolean = false) => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-    setLoading(true);
-    
-    try {
-      const limit = 20;
-      let url: string;
-      
-      if (searchTerm) {
-        url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${TENOR_API_KEY}&client_key=${CLIENT_KEY}&limit=${limit}${pos ? `&pos=${pos}` : ''}&media_filter=gif,tinygif,mediumgif`;
-      } else {
-        url = `https://tenor.googleapis.com/v2/featured?key=${TENOR_API_KEY}&client_key=${CLIENT_KEY}&limit=${limit}${pos ? `&pos=${pos}` : ''}&media_filter=gif,tinygif,mediumgif`;
-      }
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.results && Array.isArray(data.results)) {
-        const formattedGifs: GifData[] = data.results.map((gif: any) => ({
-          id: gif.id,
-          title: gif.title || 'GIF',
-          images: {
-            original: { url: gif.media_formats?.mediumgif?.url || gif.media_formats?.gif?.url || gif.url },
-            preview: { url: gif.media_formats?.tinygif?.url || gif.media_formats?.mediumgif?.url || gif.url },
-          },
-        }));
-        
-        if (append) {
-          setGifs(prev => [...prev, ...formattedGifs]);
-        } else {
-          setGifs(formattedGifs);
-        }
-        setNextPos(data.next || null);
-        setHasMore(!!data.next);
-      } else {
-        setHasMore(false);
-        if (!append) {
-          setGifs([]);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch GIFs:', error);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-      loadingRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      setNextPos(null);
-      setGifs([]);
-      setSearch('');
-      fetchGifs('', null, false);
-    }
-  }, [open, fetchGifs]);
-
+  // Filter GIFs by search
   useEffect(() => {
     if (searchTimeout.current) {
       clearTimeout(searchTimeout.current);
     }
+    
     searchTimeout.current = setTimeout(() => {
-      setNextPos(null);
-      setGifs([]);
-      setHasMore(true);
-      fetchGifs(search, null, false);
-    }, 400);
+      if (!search.trim()) {
+        setGifs(TRENDING_GIFS);
+      } else {
+        const searchLower = search.toLowerCase();
+        const filtered = TRENDING_GIFS.filter(gif => 
+          gif.title.toLowerCase().includes(searchLower)
+        );
+        setGifs(filtered.length > 0 ? filtered : TRENDING_GIFS);
+      }
+    }, 200);
 
     return () => {
       if (searchTimeout.current) {
         clearTimeout(searchTimeout.current);
       }
     };
-  }, [search, fetchGifs]);
+  }, [search]);
 
   const handleSelect = (gif: GifData) => {
-    onSelect(gif.images.original.url, gif.images.preview.url);
+    onSelect(gif.url, gif.preview);
     onClose();
   };
 
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLDivElement;
-    const scrollBottom = target.scrollHeight - target.scrollTop - target.clientHeight;
-    
-    if (scrollBottom < 150 && hasMore && !loadingRef.current && nextPos) {
-      fetchGifs(search, nextPos, true);
+  // Reset when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSearch('');
+      setGifs(TRENDING_GIFS);
     }
-  };
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -142,29 +104,25 @@ export function GifPicker({ open, onClose, onSelect }: GifPickerProps) {
               className="pl-9"
             />
           </div>
-          <ScrollArea className="h-80" onScroll={handleScroll}>
-            <div className="grid grid-cols-2 gap-2 p-1">
-              {gifs.map((gif) => (
-                <button
-                  key={gif.id}
-                  onClick={() => handleSelect(gif)}
-                  className="aspect-video rounded-md overflow-hidden hover:opacity-80 transition-opacity bg-secondary"
-                >
-                  <img
-                    src={gif.images.preview.url}
-                    alt={gif.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </button>
-              ))}
-            </div>
-            {loading && (
-              <div className="flex justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <ScrollArea className="h-80">
+            {gifs.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2 p-1">
+                {gifs.map((gif) => (
+                  <button
+                    key={gif.id}
+                    onClick={() => handleSelect(gif)}
+                    className="aspect-video rounded-md overflow-hidden hover:opacity-80 transition-opacity bg-secondary"
+                  >
+                    <img
+                      src={gif.preview}
+                      alt={gif.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))}
               </div>
-            )}
-            {!loading && gifs.length === 0 && (
+            ) : (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 No GIFs found
               </div>
